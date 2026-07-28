@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  ANALISTA
+}
+
+enum SampleStatus {
+  CREATED
+  SENT_TO_LIMA
+  PENDING_ANALYSIS
+  ANALYZED
+  VALIDATED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         Role     @default(ANALISTA)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  samplesCreated  Sample[]    @relation("CreatedBy")
+  samplesAnalyzed Sample[]    @relation("AnalyzedBy")
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model ProductType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  samples Sample[]
+
+  @@map("product_types")
+}
+
+model Zone {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  region    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sampleOrigins SampleOrigin[]
+
+  @@map("zones")
+}
+
+model Sample {
+  id            String       @id @default(uuid())
+  loteCode      String       @map("lote_code")
+  productTypeId String       @map("product_type_id")
+  weight        Decimal?     @db.Decimal(10, 2)
+  producerCode  String?      @map("producer_code")
+  producerName  String?      @map("producer_name")
+  cadmium       Decimal?     @db.Decimal(10, 4)
+  status        SampleStatus @default(CREATED)
+  sentDate      DateTime?    @map("sent_date")
+  analyzedAt    DateTime?    @map("analyzed_at")
+  notes         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  productType ProductType @relation(fields: [productTypeId], references: [id])
+  createdById String?     @map("created_by")
+  createdBy   User?       @relation("CreatedBy", fields: [createdById], references: [id])
+  analyzedById String?    @map("analyzed_by")
+  analyzedBy  User?       @relation("AnalyzedBy", fields: [analyzedById], references: [id])
+
+  origins    SampleOrigin[]
+  pesticides Pesticide[]
+
+  @@index([status])
+  @@index([loteCode])
+  @@map("samples")
+}
+
+model SampleOrigin {
+  sampleId String @map("sample_id")
+  zoneId   String @map("zone_id")
+
+  sample Sample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  zone   Zone   @relation(fields: [zoneId], references: [id])
+
+  @@id([sampleId, zoneId])
+  @@map("sample_origins")
+}
+
+model Pesticide {
+  id       String   @id @default(uuid())
+  sampleId String   @map("sample_id")
+  name     String
+  value    String?
+  unit     String?
+
+  sample Sample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+
+  @@map("pesticides")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  oldValues Json?    @map("old_values")
+  newValues Json?    @map("new_values")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
