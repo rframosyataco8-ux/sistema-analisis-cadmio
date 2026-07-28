@@ -1,0 +1,14 @@
+{
+  "name": "sistema-cadmio-desktop",
+  "version": "1.0.0",
+  "description": "Aplicación de Escritorio - Sistema Inteligente de Análisis de Cadmio",
+  "private": true,
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cadmio_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cadmio
+      POSTGRES_PASSWORD: cadmio_secure_2026
+      POSTGRES_DB: sistema_cadmio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cadmio_network
+
+  # El backend se agregará en Fase 3
+  # backend:
+  #   build: ./backend
+  #   ...
+
+volumes:
+  postgres_data:
+
+networks:
+  cadmio_network:
+    driver: bridge

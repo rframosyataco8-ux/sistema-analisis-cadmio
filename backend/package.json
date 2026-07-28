@@ -1,0 +1,17 @@
+{
+  "name": "sistema-cadmio-backend",
+  "version": "1.0.0",
+  "description": "Backend del Sistema Inteligente de Análisis de Cadmio",
+  "private": true,
+  "scripts": {
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main",
+    "build": "nest build",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
