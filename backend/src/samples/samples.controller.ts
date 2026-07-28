@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { SamplesService } from './samples.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role, SampleStatus } from '@prisma/client';
 import { UpdateCadmiumDto } from './dto/update-cadmium.dto';
+import { CreateSampleDto } from './dto/create-sample.dto';
 
 @Controller('samples')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -14,6 +15,11 @@ export class SamplesController {
   @Get()
   findAll(@Query('status') status?: SampleStatus) {
     return this.samplesService.findAll(status);
+  }
+
+  @Get('stats')
+  getStats() {
+    return this.samplesService.getStats();
   }
 
   @Get('pending')
@@ -27,6 +33,12 @@ export class SamplesController {
     return this.samplesService.findOne(id);
   }
 
+  @Post()
+  @Roles(Role.ADMIN)
+  create(@Body() dto: CreateSampleDto, @Req() req: any) {
+    return this.samplesService.create(dto, req.user.id);
+  }
+
   @Patch(':id/cadmium')
   @Roles(Role.ANALISTA, Role.ADMIN)
   updateCadmium(
@@ -35,5 +47,11 @@ export class SamplesController {
     @Req() req: any,
   ) {
     return this.samplesService.updateCadmium(id, dto, req.user.id, req.user.role);
+  }
+
+  @Patch(':id/validate')
+  @Roles(Role.ADMIN)
+  validate(@Param('id') id: string) {
+    return this.samplesService.validate(id);
   }
 }

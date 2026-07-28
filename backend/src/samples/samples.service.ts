@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { SampleStatus, Role } from '@prisma/client';
 import { UpdateCadmiumDto } from './dto/update-cadmium.dto';
+import { CreateSampleDto } from './dto/create-sample.dto';
 
 @Injectable()
 export class SamplesService {
@@ -40,6 +41,33 @@ export class SamplesService {
     return sample;
   }
 
+  async create(dto: CreateSampleDto, userId: string) {
+    const sample = await this.prisma.sample.create({
+      data: {
+        loteCode: dto.loteCode,
+        productTypeId: dto.productTypeId,
+        weight: dto.weight,
+        producerCode: dto.producerCode,
+        producerName: dto.producerName,
+        notes: dto.notes,
+        status: SampleStatus.PENDING_ANALYSIS,
+        createdById: userId,
+        origins: dto.zoneIds?.length
+          ? {
+              create: dto.zoneIds.map((zoneId) => ({ zoneId })),
+            }
+          : undefined,
+      },
+      include: {
+        productType: true,
+        origins: { include: { zone: true } },
+        createdBy: { select: { id: true, fullName: true } },
+      },
+    });
+
+    return sample;
+  }
+
   async updateCadmium(id: string, dto: UpdateCadmiumDto, userId: string, userRole: Role) {
     const sample = await this.findOne(id);
 
@@ -47,7 +75,6 @@ export class SamplesService {
       throw new ForbiddenException('Solo se puede actualizar cadmio en muestras pendientes de análisis');
     }
 
-    // Solo ANALISTA o ADMIN pueden actualizar cadmio
     if (userRole !== Role.ANALISTA && userRole !== Role.ADMIN) {
       throw new ForbiddenException('No tienes permiso para esta acción');
     }
@@ -67,5 +94,49 @@ export class SamplesService {
         analyzedBy: { select: { id: true, fullName: true } },
       },
     });
+  }
+
+  async validate(id: string) {
+    const sample = await this.findOne(id);
+    if (sample.status !== SampleStatus.ANALYZED) {
+      throw new ForbiddenException('Solo se pueden validar muestras ya analizadas');
+    }
+
+    return this.prisma.sample.update({
+      where: { id },
+      data: { status: SampleStatus.VALIDATED },
+      include: {
+        productType: true,
+        origins: { include: { zone: true } },
+      },
+    });
+  }
+
+  async getStats() {
+    const [total, pending, analyzed, validated] = await Promise.all([
+      this.prisma.sample.count(),
+      this.prisma.sample.count({ where: { status: SampleStatus.PENDING_ANALYSIS } }),
+      this.prisma.sample.count({ where: { status: SampleStatus.ANALYZED } }),
+      this.prisma.sample.count({ where: { status: SampleStatus.VALIDATED } }),
+    ]);
+
+    const cadmiumStats = await this.prisma.sample.aggregate({
+      where: { cadmium: { not: null } },
+      _avg: { cadmium: true },
+      _max: { cadmium: true },
+      _min: { cadmium: true },
+    });
+
+    return {
+      total,
+      pending,
+      analyzed,
+      validated,
+      cadmium: {
+        avg: cadmiumStats._avg.cadmium ? Number(cadmiumStats._avg.cadmium) : null,
+        max: cadmiumStats._max.cadmium ? Number(cadmiumStats._max.cadmium) : null,
+        min: cadmiumStats._min.cadmium ? Number(cadmiumStats._min.cadmium) : null,
+      },
+    };
   }
 }
