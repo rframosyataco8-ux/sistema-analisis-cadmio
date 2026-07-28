@@ -6,51 +6,55 @@ Plataforma empresarial para el análisis, monitoreo y control del cadmio en prod
 
 ---
 
-## Estado del proyecto
+## Estado: MVP COMPLETO ✅
 
 | Fase | Estado |
 |------|--------|
-| Fase 1 - Análisis y Arquitectura | ✅ Completada |
-| Fase 2 - Estructura de carpetas | ✅ Completada |
-| Fase 3 - Configuración inicial | ✅ Completada |
-| Fase 4 - Desarrollo módulo por módulo | ✅ Completada |
+| Fase 1 - Análisis y Arquitectura | ✅ |
+| Fase 2 - Estructura de carpetas | ✅ |
+| Fase 3 - Configuración inicial | ✅ |
+| Fase 4 - Desarrollo módulo por módulo | ✅ |
 
 ---
 
-## Funcionalidades implementadas
+## Funcionalidades
 
 ### Backend
-- Autenticación JWT + roles (ADMIN / ANALISTA)
-- CRUD de usuarios y muestras
-- Actualización de Cadmio
-- Validación de muestras
+- NestJS + Prisma + PostgreSQL
+- JWT + Roles (ADMIN / ANALISTA)
+- CRUD completo de muestras y usuarios
 - Estadísticas
-- Migración de Excel histórico
+- Migración Excel
+- **WebSockets (tiempo real)**
 
 ### App Escritorio
 - Login profesional
-- **Dashboard con gráficos** (tendencia, comparación por zonas, distribución por producto)
-- **Filtros y búsqueda** de muestras
-- **Exportar a CSV**
-- Crear / listar / validar muestras
+- Dashboard con gráficos (tendencia, zonas, productos)
+- **Actualización en tiempo real** cuando Lima ingresa Cadmio
+- Filtros y búsqueda
+- Exportar CSV
+- Crear / validar muestras
 - Gestión de usuarios
 
 ### App Móvil
 - Login
-- Lista de pendientes mejorada
-- Formulario de Cadmio con observaciones
+- Lista de pendientes
+- Ingreso de Cadmio + observaciones
 - Pull-to-refresh
-- Mensajes de éxito / error claros
+- UI profesional
 
 ---
 
-## Cómo levantar el proyecto
+## Cómo levantarlo
 
 ```bash
-# 1. Base de datos
+git clone https://github.com/rframosyataco8-ux/sistema-analisis-cadmio.git
+cd sistema-analisis-cadmio
+
+# Base de datos
 docker compose up -d
 
-# 2. Backend
+# Backend
 cd backend
 cp .env.example .env
 npm install
@@ -59,17 +63,17 @@ npx prisma migrate dev --name init
 npm run prisma:seed
 npm run start:dev
 
-# 3. (Opcional) Migrar Excel histórico
+# (Opcional) Migrar Excel
 # Coloca el archivo en backend/data/Torta_Trozada_Cadmio_traza_2026.xlsx
 npm run migrate:excel
 
-# 4. App Escritorio
-cd desktop
+# Escritorio
+cd ../desktop
 npm install
 npm run dev
 
-# 5. App Móvil
-cd mobile
+# Móvil
+cd ../mobile
 flutter pub get
 flutter run
 ```
@@ -85,9 +89,9 @@ flutter run
 
 ---
 
-## Flujo de uso
+## Flujo completo
 
-1. Admin crea muestras (o se migran desde Excel).
-2. Las muestras quedan `PENDING_ANALYSIS`.
-3. Analista (Lima) ingresa el Cadmio desde la app móvil.
-4. Admin ve el resultado en el Dashboard, puede filtrar, exportar y validar.
+1. **Chincha (escritorio)** crea una muestra → queda `PENDING_ANALYSIS`
+2. **Lima (móvil)** ve la muestra e ingresa el valor de Cadmio
+3. **Chincha** ve el cambio **en tiempo real** en el Dashboard
+4. Admin puede filtrar, exportar CSV y **Validar** la muestra

@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SampleStatus, Role } from '@prisma/client';
 import { UpdateCadmiumDto } from './dto/update-cadmium.dto';
 import { CreateSampleDto } from './dto/create-sample.dto';
+import { SamplesGateway } from './samples.gateway';
 
 @Injectable()
 export class SamplesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private gateway: SamplesGateway,
+  ) {}
 
   async findAll(status?: SampleStatus) {
     return this.prisma.sample.findMany({
@@ -53,9 +57,7 @@ export class SamplesService {
         status: SampleStatus.PENDING_ANALYSIS,
         createdById: userId,
         origins: dto.zoneIds?.length
-          ? {
-              create: dto.zoneIds.map((zoneId) => ({ zoneId })),
-            }
+          ? { create: dto.zoneIds.map((zoneId) => ({ zoneId })) }
           : undefined,
       },
       include: {
@@ -65,6 +67,7 @@ export class SamplesService {
       },
     });
 
+    this.gateway.emitSampleCreated(sample);
     return sample;
   }
 
@@ -79,7 +82,7 @@ export class SamplesService {
       throw new ForbiddenException('No tienes permiso para esta acción');
     }
 
-    return this.prisma.sample.update({
+    const updated = await this.prisma.sample.update({
       where: { id },
       data: {
         cadmium: dto.cadmium,
@@ -94,6 +97,9 @@ export class SamplesService {
         analyzedBy: { select: { id: true, fullName: true } },
       },
     });
+
+    this.gateway.emitSampleUpdated(updated);
+    return updated;
   }
 
   async validate(id: string) {
@@ -102,7 +108,7 @@ export class SamplesService {
       throw new ForbiddenException('Solo se pueden validar muestras ya analizadas');
     }
 
-    return this.prisma.sample.update({
+    const updated = await this.prisma.sample.update({
       where: { id },
       data: { status: SampleStatus.VALIDATED },
       include: {
@@ -110,6 +116,9 @@ export class SamplesService {
         origins: { include: { zone: true } },
       },
     });
+
+    this.gateway.emitSampleUpdated(updated);
+    return updated;
   }
 
   async getStats() {
