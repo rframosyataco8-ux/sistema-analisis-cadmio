@@ -13,41 +13,44 @@ Plataforma empresarial para el análisis, monitoreo y control del cadmio en prod
 | Fase 1 - Análisis y Arquitectura | ✅ Completada |
 | Fase 2 - Estructura de carpetas | ✅ Completada |
 | Fase 3 - Configuración inicial | ✅ Completada |
-| Fase 4 - Desarrollo módulo por módulo | 🔄 En progreso |
+| Fase 4 - Desarrollo módulo por módulo | ✅ Completada |
 
 ---
 
-## Lo que ya funciona
+## Funcionalidades implementadas
 
 ### Backend
 - Autenticación JWT + roles (ADMIN / ANALISTA)
-- CRUD de usuarios
-- Creación, listado y validación de muestras
-- Actualización de Cadmio desde móvil
-- Estadísticas (promedio, máx, mín)
-- **Migración del Excel histórico** ← nuevo
+- CRUD de usuarios y muestras
+- Actualización de Cadmio
+- Validación de muestras
+- Estadísticas
+- Migración de Excel histórico
 
 ### App Escritorio
-- Login + Layout profesional
-- Dashboard con KPIs
-- Módulo de Muestras (crear + listar + validar)
-- Módulo de Usuarios
+- Login profesional
+- **Dashboard con gráficos** (tendencia, comparación por zonas, distribución por producto)
+- **Filtros y búsqueda** de muestras
+- **Exportar a CSV**
+- Crear / listar / validar muestras
+- Gestión de usuarios
 
 ### App Móvil
 - Login
-- Lista de pendientes + ingreso de Cadmio
+- Lista de pendientes mejorada
+- Formulario de Cadmio con observaciones
+- Pull-to-refresh
+- Mensajes de éxito / error claros
 
 ---
 
 ## Cómo levantar el proyecto
 
-### 1. Base de datos
 ```bash
+# 1. Base de datos
 docker compose up -d
-```
 
-### 2. Backend
-```bash
+# 2. Backend
 cd backend
 cp .env.example .env
 npm install
@@ -55,36 +58,17 @@ npx prisma generate
 npx prisma migrate dev --name init
 npm run prisma:seed
 npm run start:dev
-```
 
-### 3. Migrar el Excel histórico (importante)
+# 3. (Opcional) Migrar Excel histórico
+# Coloca el archivo en backend/data/Torta_Trozada_Cadmio_traza_2026.xlsx
+npm run migrate:excel
 
-1. Copia tu archivo Excel a la carpeta:
-   ```
-   backend/data/Torta_Trozada_Cadmio_traza_2026.xlsx
-   ```
-   (el nombre debe ser exactamente ese)
-
-2. Ejecuta la migración:
-   ```bash
-   cd backend
-   npm run migrate:excel
-   ```
-
-3. Verifica los datos:
-   ```bash
-   npx prisma studio
-   ```
-
-### 4. App Escritorio
-```bash
+# 4. App Escritorio
 cd desktop
 npm install
 npm run dev
-```
 
-### 5. App Móvil
-```bash
+# 5. App Móvil
 cd mobile
 flutter pub get
 flutter run
@@ -92,28 +76,18 @@ flutter run
 
 ---
 
-## Credenciales iniciales
+## Credenciales
 
 | Rol | Email | Contraseña |
 |-----|-------|------------|
-| ADMIN (Chincha) | admin@romex.pe | Admin123! |
-| ANALISTA (Lima) | lima@romex.pe | Analista123! |
+| ADMIN | admin@romex.pe | Admin123! |
+| ANALISTA | lima@romex.pe | Analista123! |
 
 ---
 
 ## Flujo de uso
 
-1. Admin crea muestras o se migran desde el Excel.
-2. Las muestras quedan en estado `PENDING_ANALYSIS`.
-3. Analista (Lima) abre la app móvil e ingresa el valor de Cadmio.
-4. Admin ve el resultado en el Dashboard y puede **Validar**.
-
----
-
-## Próximos bloques de la Fase 4
-
-- Gráficos del Dashboard (Recharts)
-- Filtros y búsqueda avanzada
-- Reportes PDF / Excel
-- Tiempo real con WebSockets
-- Mejoras de UI móvil
+1. Admin crea muestras (o se migran desde Excel).
+2. Las muestras quedan `PENDING_ANALYSIS`.
+3. Analista (Lima) ingresa el Cadmio desde la app móvil.
+4. Admin ve el resultado en el Dashboard, puede filtrar, exportar y validar.
