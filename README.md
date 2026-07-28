@@ -13,33 +13,29 @@ Plataforma empresarial para el análisis, monitoreo y control del cadmio en prod
 | Fase 1 - Análisis y Arquitectura | ✅ Completada |
 | Fase 2 - Estructura de carpetas | ✅ Completada |
 | Fase 3 - Configuración inicial | ✅ Completada |
-| Fase 4 - Desarrollo módulo por módulo | 🔄 En progreso (parte 1) |
+| Fase 4 - Desarrollo módulo por módulo | 🔄 En progreso |
 
 ---
 
-## Lo que ya funciona (Fase 4 - parte 1)
+## Lo que ya funciona
 
 ### Backend
-- Autenticación JWT + roles
-- CRUD de usuarios (solo ADMIN)
-- Creación de muestras (solo ADMIN)
-- Listado de muestras + filtros por estado
-- Actualización de Cadmio (ANALISTA / ADMIN)
-- Validación de muestras (ADMIN)
-- Estadísticas (promedio, máx, mín cadmio)
-- Product Types y Zones
+- Autenticación JWT + roles (ADMIN / ANALISTA)
+- CRUD de usuarios
+- Creación, listado y validación de muestras
+- Actualización de Cadmio desde móvil
+- Estadísticas (promedio, máx, mín)
+- **Migración del Excel histórico** ← nuevo
 
 ### App Escritorio
-- Login
-- Layout con menú lateral
-- Dashboard con KPIs reales
+- Login + Layout profesional
+- Dashboard con KPIs
 - Módulo de Muestras (crear + listar + validar)
-- Módulo de Usuarios (crear + desactivar)
+- Módulo de Usuarios
 
 ### App Móvil
 - Login
-- Lista de muestras pendientes
-- Ingreso de valor de Cadmio
+- Lista de pendientes + ingreso de Cadmio
 
 ---
 
@@ -61,14 +57,33 @@ npm run prisma:seed
 npm run start:dev
 ```
 
-### 3. App Escritorio
+### 3. Migrar el Excel histórico (importante)
+
+1. Copia tu archivo Excel a la carpeta:
+   ```
+   backend/data/Torta_Trozada_Cadmio_traza_2026.xlsx
+   ```
+   (el nombre debe ser exactamente ese)
+
+2. Ejecuta la migración:
+   ```bash
+   cd backend
+   npm run migrate:excel
+   ```
+
+3. Verifica los datos:
+   ```bash
+   npx prisma studio
+   ```
+
+### 4. App Escritorio
 ```bash
 cd desktop
 npm install
 npm run dev
 ```
 
-### 4. App Móvil
+### 5. App Móvil
 ```bash
 cd mobile
 flutter pub get
@@ -86,22 +101,19 @@ flutter run
 
 ---
 
-## Flujo de uso actual
+## Flujo de uso
 
-1. Entra como **admin@romex.pe** en la app de escritorio.
-2. Ve a **Muestras → + Nueva muestra** y crea un registro.
-3. La muestra queda en estado `PENDING_ANALYSIS`.
-4. En la app móvil entra como **lima@romex.pe**.
-5. Verás la muestra pendiente → ingresa el valor de Cadmio.
-6. Vuelve al escritorio: el valor ya aparece y puedes **Validar**.
+1. Admin crea muestras o se migran desde el Excel.
+2. Las muestras quedan en estado `PENDING_ANALYSIS`.
+3. Analista (Lima) abre la app móvil e ingresa el valor de Cadmio.
+4. Admin ve el resultado en el Dashboard y puede **Validar**.
 
 ---
 
-## Próximos entregables (Fase 4 - continuación)
+## Próximos bloques de la Fase 4
 
-- Gráficos (Recharts) en el Dashboard
-- Migración del Excel histórico
-- Filtros avanzados y búsqueda
-- Reportes PDF/Excel
-- Tiempo real (WebSockets)
+- Gráficos del Dashboard (Recharts)
+- Filtros y búsqueda avanzada
+- Reportes PDF / Excel
+- Tiempo real con WebSockets
 - Mejoras de UI móvil
