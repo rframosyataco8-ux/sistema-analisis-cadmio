@@ -1,60 +1,43 @@
 # Sistema Inteligente de Análisis de Cadmio
 
-Plataforma empresarial para el análisis, monitoreo y control del cadmio en productos de cacao.
+Sistema empresarial completo para el control de cadmio en productos de cacao.
 
 **Repositorio:** https://github.com/rframosyataco8-ux/sistema-analisis-cadmio
 
 ---
 
-## Estado: MVP COMPLETO ✅
+## Componentes
 
-| Fase | Estado |
-|------|--------|
-| Fase 1 - Análisis y Arquitectura | ✅ |
-| Fase 2 - Estructura de carpetas | ✅ |
-| Fase 3 - Configuración inicial | ✅ |
-| Fase 4 - Desarrollo módulo por módulo | ✅ |
-
----
-
-## Funcionalidades
-
-### Backend
-- NestJS + Prisma + PostgreSQL
-- JWT + Roles (ADMIN / ANALISTA)
-- CRUD completo de muestras y usuarios
-- Estadísticas
-- Migración Excel
-- **WebSockets (tiempo real)**
-
-### App Escritorio
-- Login profesional
-- Dashboard con gráficos (tendencia, zonas, productos)
-- **Actualización en tiempo real** cuando Lima ingresa Cadmio
-- Filtros y búsqueda
-- Exportar CSV
-- Crear / validar muestras
-- Gestión de usuarios
-
-### App Móvil
-- Login
-- Lista de pendientes
-- Ingreso de Cadmio + observaciones
-- Pull-to-refresh
-- UI profesional
+| Componente | Tecnología | Uso |
+|------------|-----------|-----|
+| **Backend** | NestJS + Prisma + PostgreSQL | API segura + tiempo real |
+| **App Escritorio** | Electron + React + Tailwind | Panel de control Chincha |
+| **App Móvil** | Flutter | Ingreso de Cadmio (Lima) |
 
 ---
 
-## Cómo levantarlo
+## Requisitos
+
+- Node.js 20+
+- Docker Desktop
+- Git
+- Flutter 3.16+ (solo para móvil)
+
+---
+
+## 1. Clonar y base de datos
 
 ```bash
 git clone https://github.com/rframosyataco8-ux/sistema-analisis-cadmio.git
 cd sistema-analisis-cadmio
-
-# Base de datos
 docker compose up -d
+```
 
-# Backend
+---
+
+## 2. Backend
+
+```bash
 cd backend
 cp .env.example .env
 npm install
@@ -62,36 +45,106 @@ npx prisma generate
 npx prisma migrate dev --name init
 npm run prisma:seed
 npm run start:dev
+```
 
-# (Opcional) Migrar Excel
-# Coloca el archivo en backend/data/Torta_Trozada_Cadmio_traza_2026.xlsx
-npm run migrate:excel
+Backend en: http://localhost:3000
 
-# Escritorio
-cd ../desktop
+---
+
+## 3. App de Escritorio (ventana nativa)
+
+```bash
+cd desktop
 npm install
-npm run dev
+npm run electron:dev
+```
 
-# Móvil
-cd ../mobile
+Se abre una **ventana de Windows** (no el navegador).
+
+### Credenciales
+
+| Rol | Email | Contraseña |
+|-----|-------|------------|
+| ADMIN (Chincha) | admin@romex.pe | Admin123! |
+| ANALISTA (Lima) | lima@romex.pe | Analista123! |
+
+### Funciones del escritorio
+
+- Login profesional
+- Dashboard con KPIs y gráficos (tendencia, zonas, productos)
+- Actualización en tiempo real
+- Crear / listar / filtrar / validar muestras
+- Exportar CSV
+- Gestión de usuarios (crear ADMIN y ANALISTA)
+
+---
+
+## 4. App Móvil (Flutter)
+
+```bash
+cd mobile
+flutter create . --project-name sistema_cadmio_mobile
 flutter pub get
 flutter run
 ```
 
+> `flutter create .` genera las carpetas android/ios necesarias la primera vez.
+
+### Conexión al backend
+
+| Dispositivo | URL API |
+|-------------|--------|
+| Emulador Android | `http://10.0.2.2:3000` (ya configurado) |
+| Celular físico | Cambia en `lib/core/network/api_client.dart` a la IP de tu PC, ej: `http://192.168.1.15:3000` |
+
+### Generar APK para Lima
+
+```bash
+cd mobile
+flutter build apk --release
+```
+
+El APK queda en: `mobile/build/app/outputs/flutter-apk/app-release.apk`
+
+### Funciones del móvil
+
+- Login (solo ANALISTA)
+- Lista de muestras pendientes
+- Ingreso de valor de Cadmio + observaciones
+- Pull-to-refresh
+
 ---
 
-## Credenciales
+## 5. Migrar Excel histórico (opcional)
 
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| ADMIN | admin@romex.pe | Admin123! |
-| ANALISTA | lima@romex.pe | Analista123! |
+1. Copia el Excel a: `backend/data/Torta_Trozada_Cadmio_traza_2026.xlsx`
+2. Ejecuta:
+
+```bash
+cd backend
+npm run migrate:excel
+```
 
 ---
 
-## Flujo completo
+## Flujo de uso real
 
-1. **Chincha (escritorio)** crea una muestra → queda `PENDING_ANALYSIS`
-2. **Lima (móvil)** ve la muestra e ingresa el valor de Cadmio
-3. **Chincha** ve el cambio **en tiempo real** en el Dashboard
-4. Admin puede filtrar, exportar CSV y **Validar** la muestra
+1. **Chincha** (escritorio) crea una muestra → estado `PENDING_ANALYSIS`
+2. **Lima** (móvil) ve la muestra e ingresa el Cadmio
+3. **Chincha** ve el resultado **en tiempo real** en el Dashboard
+4. Admin filtra, exporta CSV y **valida** la muestra
+
+---
+
+## Estado del sistema
+
+| Módulo | Estado |
+|--------|--------|
+| Backend seguro (JWT + roles) | Completo |
+| App Escritorio (Electron) | Completo |
+| Dashboard + gráficos | Completo |
+| Filtros + export CSV | Completo |
+| Usuarios | Completo |
+| App Móvil Flutter | Completo |
+| Tiempo real (WebSockets) | Completo |
+| Migración Excel | Script listo |

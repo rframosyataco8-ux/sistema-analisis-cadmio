@@ -6,6 +6,7 @@ import 'features/auth/login_page.dart';
 import 'features/samples/samples_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const CadmioApp());
 }
 
@@ -22,6 +23,13 @@ class CadmioApp extends StatelessWidget {
         theme: AppTheme.dark,
         home: Consumer<AuthProvider>(
           builder: (context, auth, _) {
+            if (auth.isLoading) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(color: Color(0xFF16A34A)),
+                ),
+              );
+            }
             if (auth.isAuthenticated) {
               return const SamplesPage();
             }
