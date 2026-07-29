@@ -3,6 +3,10 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Samples from './pages/Samples';
 import Users from './pages/Users';
+import Analisis from './pages/Analisis';
+import Comparaciones from './pages/Comparaciones';
+import Trazabilidad from './pages/Trazabilidad';
+import Reportes from './pages/Reportes';
 import Layout from './components/Layout';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -26,6 +30,10 @@ function App() {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="samples" element={<Samples />} />
+          <Route path="analisis" element={<Analisis />} />
+          <Route path="comparaciones" element={<Comparaciones />} />
+          <Route path="trazabilidad" element={<Trazabilidad />} />
+          <Route path="reportes" element={<Reportes />} />
           <Route path="users" element={<Users />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" />} />
