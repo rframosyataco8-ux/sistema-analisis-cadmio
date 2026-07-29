@@ -15,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _loading = false;
   bool _obscure = true;
+  bool _remember = false;
   String? _error;
 
   Future<void> _submit() async {
@@ -47,47 +48,66 @@ class _LoginPageState extends State<LoginPage> {
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             child: Column(
               children: [
-                // Logo
+                // Logo circular con hoja
                 Container(
-                  width: 88,
-                  height: 88,
+                  width: 84,
+                  height: 84,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppTheme.primary, width: 2.5),
-                    color: const Color(0xFF0F1A12),
+                    color: const Color(0xFF0D1A12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primary.withOpacity(0.18),
+                        blurRadius: 20,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
                   child: const Center(
-                    child: Icon(Icons.eco, size: 44, color: AppTheme.primary),
+                    child: Icon(Icons.eco, size: 42, color: AppTheme.primary),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
                 const Text(
                   'Bienvenido',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 Text(
                   'Inicie sesión para continuar',
                   style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Laboratorio Lima · Análisis de Cadmio',
-                  style: TextStyle(color: AppTheme.primary.withOpacity(0.8), fontSize: 12),
+                  'Sistema Inteligente de Análisis de Cadmio',
+                  style: TextStyle(
+                    color: AppTheme.primary.withOpacity(0.85),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 32),
 
                 // Card de login
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
                   decoration: BoxDecoration(
                     color: AppTheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.border),
+                    border: Border.all(color: AppTheme.border.withOpacity(0.8)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,47 +118,85 @@ class _LoginPageState extends State<LoginPage> {
                           color: AppTheme.textMuted,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: 1,
+                          letterSpacing: 1.1,
                         ),
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
                         decoration: const InputDecoration(
                           hintText: 'Ingrese su usuario',
-                          prefixIcon: Icon(Icons.person_outline, color: AppTheme.textMuted),
+                          prefixIcon: Icon(Icons.person_outline_rounded, color: AppTheme.textMuted, size: 20),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
                       const Text(
                         'CONTRASEÑA',
                         style: TextStyle(
                           color: AppTheme.textMuted,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: 1,
+                          letterSpacing: 1.1,
                         ),
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscure,
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
                         decoration: InputDecoration(
                           hintText: 'Ingrese su contraseña',
-                          prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textMuted),
+                          prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.textMuted, size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                               color: AppTheme.textMuted,
+                              size: 20,
                             ),
                             onPressed: () => setState(() => _obscure = !_obscure),
                           ),
                         ),
                         onSubmitted: (_) => _submit(),
                       ),
+
+                      // Recordarme
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: Checkbox(
+                              value: _remember,
+                              onChanged: (v) => setState(() => _remember = v ?? false),
+                              activeColor: AppTheme.primary,
+                              side: const BorderSide(color: AppTheme.border, width: 1.5),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => setState(() => _remember = !_remember),
+                            child: Text(
+                              'Recordarme',
+                              style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '¿Olvidó su contraseña?',
+                            style: TextStyle(
+                              color: AppTheme.primary.withOpacity(0.85),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+
                       if (_error != null) ...[
                         const SizedBox(height: 14),
                         Container(
@@ -156,7 +214,8 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 24),
+
+                      const SizedBox(height: 22),
                       SizedBox(
                         width: double.infinity,
                         height: 52,
@@ -165,6 +224,8 @@ class _LoginPageState extends State<LoginPage> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primary,
                             disabledBackgroundColor: AppTheme.primary.withOpacity(0.5),
+                            elevation: 0,
+                            shadowColor: AppTheme.primary.withOpacity(0.4),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -181,14 +242,14 @@ class _LoginPageState extends State<LoginPage> {
                               : const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.arrow_forward, size: 18),
+                                    Icon(Icons.arrow_forward_rounded, size: 18),
                                     SizedBox(width: 8),
                                     Text(
                                       'INICIAR SESIÓN',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 15,
-                                        letterSpacing: 0.8,
+                                        fontSize: 14,
+                                        letterSpacing: 0.9,
                                       ),
                                     ),
                                   ],
@@ -199,20 +260,39 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
+
                 // Features
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _Feature(icon: Icons.science_outlined, label: 'Análisis'),
-                    _Feature(icon: Icons.verified_user_outlined, label: 'Seguro'),
-                    _Feature(icon: Icons.sync, label: 'Tiempo real'),
+                    _Feature(icon: Icons.bar_chart_rounded, label: 'Análisis'),
+                    _Feature(icon: Icons.shield_outlined, label: 'Trazabilidad'),
+                    _Feature(icon: Icons.description_outlined, label: 'Reportes'),
                   ],
                 ),
+
                 const SizedBox(height: 28),
-                Text(
-                  'Versión 1.0.0  ·  Sistema Empresarial',
-                  style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 11),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppTheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Versión 1.0.0  ·  Conexión establecida',
+                      style: TextStyle(
+                        color: AppTheme.textMuted.withOpacity(0.55),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -240,17 +320,24 @@ class _Feature extends StatelessWidget {
     return Column(
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
-            color: AppTheme.primary.withOpacity(0.12),
+            color: AppTheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+            border: Border.all(color: AppTheme.primary.withOpacity(0.28)),
           ),
           child: Icon(icon, color: AppTheme.primary, size: 22),
         ),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+        const SizedBox(height: 7),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppTheme.textMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
