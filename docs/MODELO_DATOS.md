@@ -1,4 +1,4 @@
-# Modelo de Datos (Fase 1)
+# Modelo de Datos (Actualizado)
 
 ## Tablas principales
 
@@ -13,8 +13,11 @@
 
 ### product_types
 - id
+- code (corto, único: TORTA, TROZADA, GRANO, POLVO, etc.)
 - name (Torta de cacao, Grano de cacao, Cacao en polvo, etc.)
 - description
+- has_pesticides (boolean) — indica si el producto maneja plaguicidas
+- created_at
 
 ### zones
 - id
@@ -23,7 +26,7 @@
 
 ### samples
 - id (uuid)
-- lote_code (Cuartel/Lote)
+- lote_code
 - product_type_id
 - weight
 - producer_code
@@ -35,6 +38,7 @@
 - analyzed_by (user_id)
 - created_by (user_id)
 - notes
+- observation_cadmium
 - created_at / updated_at
 
 ### sample_origins (many-to-many)
@@ -44,9 +48,9 @@
 ### pesticides
 - id
 - sample_id
-- name
-- value
-- unit
+- name (Chlorpyrifos, 2,4-D, Cypermethrin, Fipronil, DEET, Azoxystrobin…)
+- value (Decimal)
+- unit (default: mg/kg)
 
 ### audit_logs
 - id
@@ -57,3 +61,15 @@
 - old_values (jsonb)
 - new_values (jsonb)
 - created_at
+
+## Productos del Excel (cada hoja)
+
+| Producto | Código | Plaguicidas |
+|----------|--------|-------------|
+| Torta de cacao | TORTA | Sí |
+| Torta trozada estándar | TROZADA | Sí |
+| Torta de cacao alcalino | TORTA_ALC | No |
+| Grano de cacao | GRANO | No |
+| Grano de cacao orgánico | GRANO_ORG | No |
+| Cacao alcalino | ALC | No |
+| Cacao en polvo | POLVO | No |
