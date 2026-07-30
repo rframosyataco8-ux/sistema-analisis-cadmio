@@ -13,19 +13,22 @@ export class SamplesController {
   constructor(private samplesService: SamplesService) {}
 
   @Get()
-  findAll(@Query('status') status?: SampleStatus) {
-    return this.samplesService.findAll(status);
+  findAll(
+    @Query('status') status?: SampleStatus,
+    @Query('productTypeId') productTypeId?: string,
+  ) {
+    return this.samplesService.findAll(status, productTypeId);
   }
 
   @Get('stats')
-  getStats() {
-    return this.samplesService.getStats();
+  getStats(@Query('productTypeId') productTypeId?: string) {
+    return this.samplesService.getStats(productTypeId);
   }
 
   @Get('pending')
   @Roles(Role.ANALISTA, Role.ADMIN)
-  findPending() {
-    return this.samplesService.findPending();
+  findPending(@Query('productTypeId') productTypeId?: string) {
+    return this.samplesService.findPending(productTypeId);
   }
 
   @Get(':id')
