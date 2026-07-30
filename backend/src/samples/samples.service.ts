@@ -12,9 +12,12 @@ export class SamplesService {
     private gateway: SamplesGateway,
   ) {}
 
-  async findAll(status?: SampleStatus) {
+  async findAll(status?: SampleStatus, productTypeId?: string) {
     return this.prisma.sample.findMany({
-      where: status ? { status } : undefined,
+      where: {
+        ...(status ? { status } : {}),
+        ...(productTypeId ? { productTypeId } : {}),
+      },
       include: {
         productType: true,
         origins: { include: { zone: true } },
@@ -26,8 +29,8 @@ export class SamplesService {
     });
   }
 
-  async findPending() {
-    return this.findAll(SampleStatus.PENDING_ANALYSIS);
+  async findPending(productTypeId?: string) {
+    return this.findAll(SampleStatus.PENDING_ANALYSIS, productTypeId);
   }
 
   async findOne(id: string) {
@@ -59,10 +62,20 @@ export class SamplesService {
         origins: dto.zoneIds?.length
           ? { create: dto.zoneIds.map((zoneId) => ({ zoneId })) }
           : undefined,
+        pesticides: dto.pesticides?.length
+          ? {
+              create: dto.pesticides.map((p) => ({
+                name: p.name,
+                value: p.value ?? null,
+                unit: p.unit ?? 'mg/kg',
+              })),
+            }
+          : undefined,
       },
       include: {
         productType: true,
         origins: { include: { zone: true } },
+        pesticides: true,
         createdBy: { select: { id: true, fullName: true } },
       },
     });
@@ -90,10 +103,12 @@ export class SamplesService {
         analyzedAt: new Date(),
         analyzedById: userId,
         notes: dto.notes ?? sample.notes,
+        observationCadmium: dto.notes ?? sample.observationCadmium,
       },
       include: {
         productType: true,
         origins: { include: { zone: true } },
+        pesticides: true,
         analyzedBy: { select: { id: true, fullName: true } },
       },
     });
@@ -114,6 +129,7 @@ export class SamplesService {
       include: {
         productType: true,
         origins: { include: { zone: true } },
+        pesticides: true,
       },
     });
 
@@ -121,16 +137,18 @@ export class SamplesService {
     return updated;
   }
 
-  async getStats() {
+  async getStats(productTypeId?: string) {
+    const where = productTypeId ? { productTypeId } : {};
+
     const [total, pending, analyzed, validated] = await Promise.all([
-      this.prisma.sample.count(),
-      this.prisma.sample.count({ where: { status: SampleStatus.PENDING_ANALYSIS } }),
-      this.prisma.sample.count({ where: { status: SampleStatus.ANALYZED } }),
-      this.prisma.sample.count({ where: { status: SampleStatus.VALIDATED } }),
+      this.prisma.sample.count({ where }),
+      this.prisma.sample.count({ where: { ...where, status: SampleStatus.PENDING_ANALYSIS } }),
+      this.prisma.sample.count({ where: { ...where, status: SampleStatus.ANALYZED } }),
+      this.prisma.sample.count({ where: { ...where, status: SampleStatus.VALIDATED } }),
     ]);
 
     const cadmiumStats = await this.prisma.sample.aggregate({
-      where: { cadmium: { not: null } },
+      where: { ...where, cadmium: { not: null } },
       _avg: { cadmium: true },
       _max: { cadmium: true },
       _min: { cadmium: true },

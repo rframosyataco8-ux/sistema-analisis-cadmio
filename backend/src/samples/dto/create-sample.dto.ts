@@ -1,4 +1,19 @@
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class PesticideDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsNumber()
+  @IsOptional()
+  value?: number;
+
+  @IsString()
+  @IsOptional()
+  unit?: string;
+}
 
 export class CreateSampleDto {
   @IsString()
@@ -30,4 +45,10 @@ export class CreateSampleDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PesticideDto)
+  @IsOptional()
+  pesticides?: PesticideDto[];
 }

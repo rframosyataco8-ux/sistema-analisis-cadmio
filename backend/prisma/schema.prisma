@@ -38,10 +38,12 @@ model User {
 }
 
 model ProductType {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  code          String?  @unique
+  name          String   @unique
+  description   String?
+  hasPesticides Boolean  @default(false) @map("has_pesticides")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   samples Sample[]
 
@@ -60,31 +62,33 @@ model Zone {
 }
 
 model Sample {
-  id            String       @id @default(uuid())
-  loteCode      String       @map("lote_code")
-  productTypeId String       @map("product_type_id")
-  weight        Decimal?     @db.Decimal(10, 2)
-  producerCode  String?      @map("producer_code")
-  producerName  String?      @map("producer_name")
-  cadmium       Decimal?     @db.Decimal(10, 4)
-  status        SampleStatus @default(CREATED)
-  sentDate      DateTime?    @map("sent_date")
-  analyzedAt    DateTime?    @map("analyzed_at")
-  notes         String?
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  id             String       @id @default(uuid())
+  loteCode       String       @map("lote_code")
+  productTypeId  String       @map("product_type_id")
+  weight         Decimal?     @db.Decimal(10, 2)
+  producerCode   String?      @map("producer_code")
+  producerName   String?      @map("producer_name")
+  cadmium        Decimal?     @db.Decimal(10, 4)
+  status         SampleStatus @default(CREATED)
+  sentDate       DateTime?    @map("sent_date")
+  analyzedAt     DateTime?    @map("analyzed_at")
+  notes          String?
+  observationCadmium String?  @map("observation_cadmium")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  productType ProductType @relation(fields: [productTypeId], references: [id])
-  createdById String?     @map("created_by")
-  createdBy   User?       @relation("CreatedBy", fields: [createdById], references: [id])
-  analyzedById String?    @map("analyzed_by")
-  analyzedBy  User?       @relation("AnalyzedBy", fields: [analyzedById], references: [id])
+  productType  ProductType @relation(fields: [productTypeId], references: [id])
+  createdById  String?     @map("created_by")
+  createdBy    User?       @relation("CreatedBy", fields: [createdById], references: [id])
+  analyzedById String?     @map("analyzed_by")
+  analyzedBy   User?       @relation("AnalyzedBy", fields: [analyzedById], references: [id])
 
   origins    SampleOrigin[]
   pesticides Pesticide[]
 
   @@index([status])
   @@index([loteCode])
+  @@index([productTypeId])
   @@map("samples")
 }
 
@@ -103,11 +107,13 @@ model Pesticide {
   id       String   @id @default(uuid())
   sampleId String   @map("sample_id")
   name     String
-  value    String?
-  unit     String?
+  value    Decimal? @db.Decimal(12, 6)
+  unit     String?  @default("mg/kg")
 
   sample Sample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
 
+  @@index([sampleId])
+  @@index([name])
   @@map("pesticides")
 }
 
