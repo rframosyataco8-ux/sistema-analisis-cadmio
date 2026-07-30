@@ -2,13 +2,13 @@ import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { useSocket } from '../hooks/useSocket';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const COLORS = ['#22c55e', '#3b82f6', '#eab308', '#ef4444', '#a855f7', '#06b6d4'];
-const LIMITE = 1.0;
+const COLORS = ['#9a6540', '#c4894a', '#10b981', '#3b82f6', '#f59e0b', '#f43f5e'];
+const LIMITE_CD = 1.0;
 
 export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -59,134 +59,199 @@ export default function Dashboard() {
     byMonth[k].sum += Number(s.cadmium);
     byMonth[k].count++;
   });
-  const trend = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b))
+  const trend = Object.entries(byMonth)
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, d]) => ({ month, promedio: Number((d.sum / d.count).toFixed(3)) }));
 
-  const alertas = samples.filter((s) => s.cadmium != null && Number(s.cadmium) >= LIMITE)
-    .sort((a, b) => Number(b.cadmium) - Number(a.cadmium)).slice(0, 5);
+  const alertas = samples
+    .filter((s) => s.cadmium != null && Number(s.cadmium) >= LIMITE_CD)
+    .sort((a, b) => Number(b.cadmium) - Number(a.cadmium))
+    .slice(0, 6);
+
   const pendientes = samples.filter((s) => s.status === 'PENDING_ANALYSIS').length;
+  const conPlaguicidas = samples.filter((s) => s.pesticides?.length > 0).length;
 
   return (
-    <div className="p-6 max-w-[1600px]">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 max-w-[1600px] mx-auto">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard Ejecutivo</h1>
-          <p className="text-gray-400 text-sm">Resumen del comportamiento del cadmio</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-50">Dashboard Principal</h1>
+          <p className="text-slate-400 text-sm mt-1">Control de calidad · Cadmio y plaguicidas en productos de cacao</p>
         </div>
         {lastUpdate && (
-          <div className="text-right text-xs">
-            <p className="text-green-400 flex items-center gap-1.5 justify-end">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Tiempo real
-            </p>
-            <p className="text-gray-500">{lastUpdate}</p>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Tiempo real · {lastUpdate}</span>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <Kpi label="Promedio Cd" value={stats?.cadmium?.avg != null ? Number(stats.cadmium.avg).toFixed(2) : '-'} unit="ppm" />
-        <Kpi label="Máximo Cd" value={stats?.cadmium?.max != null ? Number(stats.cadmium.max).toFixed(2) : '-'} unit="ppm" accent="text-red-400" />
-        <Kpi label="Mínimo Cd" value={stats?.cadmium?.min != null ? Number(stats.cadmium.min).toFixed(2) : '-'} unit="ppm" accent="text-green-400" />
-        <Kpi label="Total" value={stats?.total ?? '-'} />
-        <Kpi label="Pendientes" value={pendientes} accent="text-yellow-400" />
-        <Kpi label="Analizadas" value={stats?.analyzed ?? '-'} accent="text-blue-400" />
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+        <Kpi
+          label="Promedio Cd"
+          value={stats?.cadmium?.avg != null ? Number(stats.cadmium.avg).toFixed(3) : '—'}
+          unit="mg/kg"
+          tone="neutral"
+        />
+        <Kpi
+          label="Máximo Cd"
+          value={stats?.cadmium?.max != null ? Number(stats.cadmium.max).toFixed(3) : '—'}
+          unit="mg/kg"
+          tone={stats?.cadmium?.max >= LIMITE_CD ? 'risk' : 'neutral'}
+        />
+        <Kpi
+          label="Mínimo Cd"
+          value={stats?.cadmium?.min != null ? Number(stats.cadmium.min).toFixed(3) : '—'}
+          unit="mg/kg"
+          tone="conform"
+        />
+        <Kpi label="Total lotes" value={stats?.total ?? '—'} tone="neutral" />
+        <Kpi label="Pendientes lab" value={pendientes} tone={pendientes > 0 ? 'alert' : 'conform'} />
+        <Kpi label="Con plaguicidas" value={conPlaguicidas} tone="neutral" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
-        <Panel title="Tendencia del Cadmio" subtitle="Promedio mensual">
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
+        <Panel title="Tendencia de Cadmio" subtitle="Promedio mensual (mg/kg)">
           {trend.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="month" stroke="#6b7280" fontSize={10} />
-                <YAxis stroke="#6b7280" fontSize={10} />
-                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 8 }} />
-                <Line type="monotone" dataKey="promedio" stroke="#22c55e" strokeWidth={2} dot={{ r: 3, fill: '#22c55e' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
+                <YAxis stroke="#64748b" fontSize={11} />
+                <Tooltip
+                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }}
+                />
+                <Line type="monotone" dataKey="promedio" stroke="#c4894a" strokeWidth={2.5} dot={{ r: 3.5, fill: '#c4894a' }} />
               </LineChart>
             </ResponsiveContainer>
           ) : <Empty />}
         </Panel>
 
-        <Panel title="Top Zonas" subtitle="Promedio ppm">
+        <Panel title="Cadmio por Zona" subtitle="Promedio mg/kg (top 8)">
           {zoneData.length ? (
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={zoneData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis type="number" stroke="#6b7280" fontSize={10} />
-                <YAxis type="category" dataKey="name" stroke="#6b7280" fontSize={10} width={85} />
-                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 8 }} />
-                <Bar dataKey="promedio" fill="#22c55e" radius={[0, 4, 4, 0]} />
+              <BarChart data={zoneData} layout="vertical" margin={{ left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis type="number" stroke="#64748b" fontSize={11} />
+                <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={11} width={90} />
+                <Tooltip
+                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }}
+                />
+                <Bar dataKey="promedio" fill="#9a6540" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : <Empty />}
         </Panel>
 
-        <Panel title="Por Producto" subtitle="Distribución de muestras">
+        <Panel title="Distribución por Producto" subtitle="Cantidad de lotes">
           {productData.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={productData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40}
-                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}>
-                  {productData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                <Pie
+                  data={productData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={85}
+                  innerRadius={48}
+                  paddingAngle={2}
+                >
+                  {productData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 8 }} />
+                <Tooltip
+                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }}
+                />
               </PieChart>
             </ResponsiveContainer>
           ) : <Empty />}
         </Panel>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-[#111827] border border-gray-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-800">
-            <h3 className="font-semibold text-sm">Últimas muestras</h3>
+      {/* Tables */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <div className="xl:col-span-2 card overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-sm text-slate-100">Últimos lotes</h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">Registro reciente de recepción y análisis</p>
+            </div>
           </div>
-          <table className="w-full text-sm">
-            <thead className="text-gray-500 text-xs">
-              <tr>
-                <th className="text-left px-5 py-2.5 font-medium">Lote</th>
-                <th className="text-left px-5 py-2.5 font-medium">Producto</th>
-                <th className="text-left px-5 py-2.5 font-medium">Cadmio</th>
-                <th className="text-left px-5 py-2.5 font-medium">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {samples.slice(0, 8).map((s) => (
-                <tr key={s.id} className="border-t border-gray-800/80 hover:bg-gray-800/20">
-                  <td className="px-5 py-2.5 font-medium">{s.loteCode}</td>
-                  <td className="px-5 py-2.5 text-gray-400">{s.productType?.name}</td>
-                  <td className="px-5 py-2.5">
-                    {s.cadmium != null ? (
-                      <span className={Number(s.cadmium) >= LIMITE ? 'text-red-400 font-semibold' : 'text-gray-200'}>
-                        {Number(s.cadmium).toFixed(3)}
-                      </span>
-                    ) : <span className="text-yellow-400 text-xs">Pendiente</span>}
-                  </td>
-                  <td className="px-5 py-2.5"><Badge status={s.status} /></td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="table-header">Lote</th>
+                  <th className="table-header">Producto</th>
+                  <th className="table-header">Cadmio</th>
+                  <th className="table-header">Plaguicidas</th>
+                  <th className="table-header">Estado</th>
                 </tr>
-              ))}
-              {!samples.length && (
-                <tr><td colSpan={4} className="px-5 py-10 text-center text-gray-500">Sin muestras — ejecuta el seed</td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {samples.slice(0, 8).map((s) => {
+                  const cd = s.cadmium != null ? Number(s.cadmium) : null;
+                  return (
+                    <tr key={s.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="table-cell font-medium font-mono text-[13px]">{s.loteCode}</td>
+                      <td className="table-cell text-slate-400">{s.productType?.name}</td>
+                      <td className="table-cell font-mono">
+                        {cd != null ? (
+                          <span className={cd >= LIMITE_CD ? 'text-rose-400 font-semibold' : 'text-slate-200'}>
+                            {cd.toFixed(3)}
+                          </span>
+                        ) : (
+                          <span className="text-amber-400 text-xs">Pendiente</span>
+                        )}
+                      </td>
+                      <td className="table-cell">
+                        {s.pesticides?.length > 0 ? (
+                          <span className="badge-alert">{s.pesticides.length}</span>
+                        ) : (
+                          <span className="text-slate-600 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="table-cell"><StatusBadge status={s.status} /></td>
+                    </tr>
+                  );
+                })}
+                {!samples.length && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-14 text-center text-slate-500 text-sm">
+                      Sin lotes. Ejecuta el seed del backend.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="bg-[#111827] border border-gray-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-800">
-            <h3 className="font-semibold text-sm">Alertas Cd ≥ {LIMITE}</h3>
+        <div className="card overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-800/80">
+            <h3 className="font-semibold text-sm text-slate-100">Alertas de cadmio</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Lotes ≥ {LIMITE_CD} mg/kg</p>
           </div>
-          <div className="divide-y divide-gray-800/80">
+          <div className="divide-y divide-slate-800/60">
             {alertas.map((s) => (
-              <div key={s.id} className="px-4 py-3 flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium">{s.loteCode}</p>
-                  <p className="text-[11px] text-gray-500">{s.productType?.name}</p>
+              <div key={s.id} className="px-5 py-3.5 flex justify-between items-center hover:bg-slate-800/20 transition-colors">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium font-mono truncate">{s.loteCode}</p>
+                  <p className="text-[11px] text-slate-500 truncate">{s.productType?.name}</p>
                 </div>
-                <span className="text-red-400 font-bold text-sm">{Number(s.cadmium).toFixed(2)}</span>
+                <span className="text-rose-400 font-bold font-mono text-sm shrink-0 ml-3">
+                  {Number(s.cadmium).toFixed(2)}
+                </span>
               </div>
             ))}
-            {!alertas.length && <p className="px-4 py-10 text-center text-gray-500 text-sm">Sin alertas</p>}
+            {!alertas.length && (
+              <p className="px-5 py-12 text-center text-slate-500 text-sm">Sin alertas activas</p>
+            )}
           </div>
         </div>
       </div>
@@ -194,12 +259,30 @@ export default function Dashboard() {
   );
 }
 
-function Kpi({ label, value, unit, accent = 'text-white' }: { label: string; value: any; unit?: string; accent?: string }) {
+function Kpi({
+  label,
+  value,
+  unit,
+  tone = 'neutral',
+}: {
+  label: string;
+  value: any;
+  unit?: string;
+  tone?: 'neutral' | 'conform' | 'alert' | 'risk';
+}) {
+  const toneClass = {
+    neutral: 'text-slate-50',
+    conform: 'text-emerald-400',
+    alert: 'text-amber-400',
+    risk: 'text-rose-400',
+  }[tone];
+
   return (
-    <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
-      <p className="text-gray-500 text-[11px] uppercase tracking-wide">{label}</p>
-      <p className={`text-xl font-bold mt-1 ${accent}`}>
-        {value}{unit && <span className="text-xs font-normal text-gray-500 ml-1">{unit}</span>}
+    <div className="card p-5">
+      <p className="text-slate-500 text-[11px] font-medium uppercase tracking-wider">{label}</p>
+      <p className={`text-2xl font-bold mt-2 tracking-tight ${toneClass}`}>
+        {value}
+        {unit && <span className="text-xs font-normal text-slate-500 ml-1.5">{unit}</span>}
       </p>
     </div>
   );
@@ -207,32 +290,34 @@ function Kpi({ label, value, unit, accent = 'text-white' }: { label: string; val
 
 function Panel({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
-      <h3 className="font-semibold text-sm">{title}</h3>
-      <p className="text-[11px] text-gray-500 mb-3">{subtitle}</p>
+    <div className="card p-5">
+      <h3 className="font-semibold text-sm text-slate-100">{title}</h3>
+      <p className="text-[11px] text-slate-500 mb-4 mt-0.5">{subtitle}</p>
       {children}
     </div>
   );
 }
 
-function Badge({ status }: { status: string }) {
+function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    PENDING_ANALYSIS: 'bg-yellow-900/40 text-yellow-300',
-    ANALYZED: 'bg-blue-900/40 text-blue-300',
-    VALIDATED: 'bg-green-900/40 text-green-300',
+    PENDING_ANALYSIS: 'badge-alert',
+    ANALYZED: 'badge-neutral',
+    VALIDATED: 'badge-conform',
+    CREATED: 'badge-neutral',
   };
   const labels: Record<string, string> = {
     PENDING_ANALYSIS: 'Pendiente',
-    ANALYZED: 'Analizada',
-    VALIDATED: 'Validada',
+    ANALYZED: 'Analizado',
+    VALIDATED: 'Validado',
+    CREATED: 'Creado',
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${map[status] || 'bg-gray-800 text-gray-400'}`}>
+    <span className={map[status] || 'badge-neutral'}>
       {labels[status] || status}
     </span>
   );
 }
 
 function Empty() {
-  return <p className="text-gray-600 text-sm text-center py-16">Sin datos</p>;
+  return <p className="text-slate-600 text-sm text-center py-16">Sin datos suficientes</p>;
 }
