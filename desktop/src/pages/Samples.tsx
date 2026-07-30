@@ -17,7 +17,6 @@ export default function Samples() {
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Filtros
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [productFilter, setProductFilter] = useState('');
@@ -106,7 +105,7 @@ export default function Samples() {
       });
       load();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al crear muestra');
+      alert(err.response?.data?.message || 'Error al crear lote');
     } finally {
       setLoading(false);
     }
@@ -138,7 +137,7 @@ export default function Samples() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `muestras_cadmio_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `lotes_cadmio_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   };
 
@@ -152,10 +151,7 @@ export default function Samples() {
   };
 
   const addPesticide = () => {
-    setForm((prev) => ({
-      ...prev,
-      pesticides: [...prev.pesticides, { name: '', value: '' }],
-    }));
+    setForm((prev) => ({ ...prev, pesticides: [...prev.pesticides, { name: '', value: '' }] }));
   };
 
   const updatePesticide = (idx: number, field: 'name' | 'value', val: string) => {
@@ -167,45 +163,39 @@ export default function Samples() {
   };
 
   const removePesticide = (idx: number) => {
-    setForm((prev) => ({
-      ...prev,
-      pesticides: prev.pesticides.filter((_, i) => i !== idx),
-    }));
+    setForm((prev) => ({ ...prev, pesticides: prev.pesticides.filter((_, i) => i !== idx) }));
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 max-w-[1600px] mx-auto">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Muestras</h1>
-          <p className="text-gray-400 text-sm">{filtered.length} de {samples.length} registros</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-50">Control de Lotes y Recepción</h1>
+          <p className="text-slate-400 text-sm mt-1">
+            {filtered.length} de {samples.length} lotes registrados
+          </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={exportCSV}
-            className="px-4 py-2 border border-gray-600 hover:bg-gray-800 rounded-lg text-sm"
-          >
+          <button onClick={exportCSV} className="btn-secondary">
             Exportar CSV
           </button>
           {user.role === 'ADMIN' && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium"
-            >
-              + Nueva muestra
+            <button onClick={() => setShowForm(true)} className="btn-primary">
+              + Nuevo lote
             </button>
           )}
         </div>
       </div>
 
-      {/* Filtros por producto (chips) */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      {/* Product chips */}
+      <div className="flex flex-wrap gap-2 mb-5">
         <button
           onClick={() => setProductFilter('')}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all duration-200 ${
             !productFilter
-              ? 'bg-green-600 border-green-500 text-white'
-              : 'border-gray-600 text-gray-400 hover:border-gray-500'
+              ? 'bg-cacao-600/25 border-cacao-500/40 text-cacao-300'
+              : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
           }`}
         >
           Todos
@@ -214,41 +204,41 @@ export default function Samples() {
           <button
             key={pt.id}
             onClick={() => setProductFilter(pt.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all duration-200 ${
               productFilter === pt.id
-                ? 'bg-green-600 border-green-500 text-white'
-                : 'border-gray-600 text-gray-400 hover:border-gray-500'
+                ? 'bg-cacao-600/25 border-cacao-500/40 text-cacao-300'
+                : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
             }`}
           >
             {pt.name}
-            {pt.hasPesticides && <span className="ml-1 opacity-70">· P</span>}
+            {pt.hasPesticides && <span className="ml-1 opacity-60">· P</span>}
           </button>
         ))}
       </div>
 
-      {/* Filtros secundarios */}
-      <div className="flex flex-wrap gap-3 mb-5">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 mb-6">
         <input
           type="text"
-          placeholder="Buscar lote, productor, plaguicida..."
+          placeholder="Buscar lote, productor, plaguicida…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm w-64"
+          className="input-field w-72"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm"
+          className="input-field w-auto"
         >
           <option value="">Todos los estados</option>
           <option value="PENDING_ANALYSIS">Pendiente</option>
-          <option value="ANALYZED">Analizada</option>
-          <option value="VALIDATED">Validada</option>
+          <option value="ANALYZED">Analizado</option>
+          <option value="VALIDATED">Validado</option>
         </select>
         {(search || statusFilter || productFilter) && (
           <button
             onClick={() => { setSearch(''); setStatusFilter(''); setProductFilter(''); }}
-            className="text-sm text-gray-400 hover:text-white"
+            className="btn-ghost text-xs"
           >
             Limpiar filtros
           </button>
@@ -257,20 +247,33 @@ export default function Samples() {
 
       {/* Modal crear */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-xl max-h-[92vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Nueva muestra</h2>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card-raised w-full max-w-xl max-h-[92vh] overflow-y-auto p-6">
+            <h2 className="text-lg font-bold text-slate-50 mb-5">Nuevo lote</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Código de Lote *</label>
-                <input required value={form.loteCode} onChange={(e) => setForm({ ...form, loteCode: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg" placeholder="Ej: 23260205" />
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Código de lote *
+                </label>
+                <input
+                  required
+                  value={form.loteCode}
+                  onChange={(e) => setForm({ ...form, loteCode: e.target.value })}
+                  className="input-field font-mono"
+                  placeholder="Ej: 23260205"
+                />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Tipo de producto *</label>
-                <select required value={form.productTypeId} onChange={(e) => setForm({ ...form, productTypeId: e.target.value, pesticides: [] })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg">
-                  <option value="">Seleccionar producto...</option>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Producto *
+                </label>
+                <select
+                  required
+                  value={form.productTypeId}
+                  onChange={(e) => setForm({ ...form, productTypeId: e.target.value, pesticides: [] })}
+                  className="input-field"
+                >
+                  <option value="">Seleccionar producto…</option>
                   {productTypes.map((pt) => (
                     <option key={pt.id} value={pt.id}>
                       {pt.name}{pt.hasPesticides ? ' (con plaguicidas)' : ''}
@@ -280,64 +283,91 @@ export default function Samples() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Peso (gr)</label>
-                  <input type="number" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg" />
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Peso (gr)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.weight}
+                    onChange={(e) => setForm({ ...form, weight: e.target.value })}
+                    className="input-field"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Código productor</label>
-                  <input value={form.producerCode} onChange={(e) => setForm({ ...form, producerCode: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg" />
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Código productor
+                  </label>
+                  <input
+                    value={form.producerCode}
+                    onChange={(e) => setForm({ ...form, producerCode: e.target.value })}
+                    className="input-field"
+                  />
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Nombre productor</label>
-                <input value={form.producerName} onChange={(e) => setForm({ ...form, producerName: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg" />
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Nombre productor
+                </label>
+                <input
+                  value={form.producerName}
+                  onChange={(e) => setForm({ ...form, producerName: e.target.value })}
+                  className="input-field"
+                />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Orígenes de grano</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                  Orígenes de grano
+                </label>
                 <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto">
                   {zones.map((z) => (
-                    <button key={z.id} type="button" onClick={() => toggleZone(z.id)}
-                      className={`px-3 py-1 rounded-full text-xs border ${
-                        form.zoneIds.includes(z.id) ? 'bg-green-600 border-green-500 text-white' : 'border-gray-600 text-gray-400'
-                      }`}>{z.name}</button>
+                    <button
+                      key={z.id}
+                      type="button"
+                      onClick={() => toggleZone(z.id)}
+                      className={`px-3 py-1 rounded-lg text-xs border transition-all duration-200 ${
+                        form.zoneIds.includes(z.id)
+                          ? 'bg-cacao-600/30 border-cacao-500/50 text-cacao-200'
+                          : 'border-slate-700 text-slate-400 hover:border-slate-600'
+                      }`}
+                    >
+                      {z.name}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Sección plaguicidas (solo si el producto lo requiere) */}
               {showPesticides && (
-                <div className="border border-amber-800/50 rounded-xl p-4 bg-amber-950/20">
+                <div className="rounded-xl border border-amber-800/40 bg-amber-950/20 p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-medium text-amber-300">Plaguicidas detectados</label>
-                    <button type="button" onClick={addPesticide}
-                      className="text-xs px-2 py-1 bg-amber-700/50 hover:bg-amber-600/50 rounded text-amber-200">
+                    <label className="text-xs font-semibold text-amber-300 uppercase tracking-wider">
+                      Plaguicidas detectados
+                    </label>
+                    <button type="button" onClick={addPesticide} className="text-xs px-2.5 py-1 rounded-lg bg-amber-800/40 text-amber-200 hover:bg-amber-700/40 transition">
                       + Agregar
                     </button>
                   </div>
                   {form.pesticides.length === 0 && (
-                    <p className="text-xs text-gray-500">Sin plaguicidas. Puedes agregar Chlorpyrifos, 2,4-D, Cypermethrin, etc.</p>
+                    <p className="text-xs text-slate-500">Sin plaguicidas. Puedes agregar Chlorpyrifos, 2,4-D, etc.</p>
                   )}
                   <div className="space-y-2">
                     {form.pesticides.map((p, idx) => (
                       <div key={idx} className="flex gap-2 items-center">
                         <input
-                          placeholder="Nombre (ej: Chlorpyrifos)"
+                          placeholder="Nombre"
                           value={p.name}
                           onChange={(e) => updatePesticide(idx, 'name', e.target.value)}
-                          className="flex-1 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm"
+                          className="input-field flex-1 py-2"
                         />
                         <input
                           placeholder="Valor"
                           value={p.value}
                           onChange={(e) => updatePesticide(idx, 'value', e.target.value)}
-                          className="w-24 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm"
+                          className="input-field w-24 py-2 font-mono"
                         />
-                        <span className="text-xs text-gray-500">mg/kg</span>
-                        <button type="button" onClick={() => removePesticide(idx)}
-                          className="text-red-400 hover:text-red-300 text-sm px-1">×</button>
+                        <span className="text-[11px] text-slate-500">mg/kg</span>
+                        <button type="button" onClick={() => removePesticide(idx)} className="text-rose-400 hover:text-rose-300 text-lg px-1">
+                          ×
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -345,14 +375,22 @@ export default function Samples() {
               )}
 
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Notas</label>
-                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg" rows={2} />
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Notas
+                </label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  className="input-field resize-none"
+                  rows={2}
+                />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-2 border border-gray-600 rounded-lg text-sm">Cancelar</button>
-                <button type="submit" disabled={loading} className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium disabled:opacity-50">
-                  {loading ? 'Guardando...' : 'Crear muestra'}
+                <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={loading} className="btn-primary flex-1">
+                  {loading ? 'Guardando…' : 'Crear lote'}
                 </button>
               </div>
             </form>
@@ -360,94 +398,117 @@ export default function Samples() {
         </div>
       )}
 
-      {/* Tabla */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-800/50 text-gray-400">
-            <tr>
-              <th className="text-left px-4 py-3">Lote</th>
-              <th className="text-left px-4 py-3">Producto</th>
-              <th className="text-left px-4 py-3">Orígenes</th>
-              <th className="text-left px-4 py-3">Cadmio</th>
-              <th className="text-left px-4 py-3">Plaguicidas</th>
-              <th className="text-left px-4 py-3">Estado</th>
-              <th className="text-left px-4 py-3">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((s) => (
-              <>
-                <tr key={s.id} className="border-t border-gray-800 hover:bg-gray-800/30">
-                  <td className="px-4 py-3 font-medium">{s.loteCode}</td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs">{s.productType?.name}</span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-400 max-w-[140px] truncate">
-                    {s.origins?.map((o: any) => o.zone.name).join(', ') || '-'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {s.cadmium != null ? (
-                      <span className={Number(s.cadmium) > 1.5 ? 'text-red-400 font-medium' : ''}>
-                        {Number(s.cadmium).toFixed(3)} ppm
-                      </span>
-                    ) : (
-                      <span className="text-yellow-400">Pendiente</span>
+      {/* Table */}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="table-header">Lote</th>
+                <th className="table-header">Producto</th>
+                <th className="table-header">Orígenes</th>
+                <th className="table-header">Cadmio</th>
+                <th className="table-header">Plaguicidas</th>
+                <th className="table-header">Estado</th>
+                <th className="table-header">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((s) => {
+                const cd = s.cadmium != null ? Number(s.cadmium) : null;
+                return (
+                  <>
+                    <tr key={s.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="table-cell font-mono font-medium text-[13px]">{s.loteCode}</td>
+                      <td className="table-cell text-slate-400 text-xs">{s.productType?.name}</td>
+                      <td className="table-cell text-xs text-slate-500 max-w-[140px] truncate">
+                        {s.origins?.map((o: any) => o.zone.name).join(', ') || '—'}
+                      </td>
+                      <td className="table-cell font-mono">
+                        {cd != null ? (
+                          <span className={cd >= 1.5 ? 'text-rose-400 font-semibold' : cd >= 1.0 ? 'text-amber-400' : 'text-slate-200'}>
+                            {cd.toFixed(3)}
+                          </span>
+                        ) : (
+                          <span className="text-amber-400 text-xs">Pendiente</span>
+                        )}
+                      </td>
+                      <td className="table-cell">
+                        {s.pesticides?.length > 0 ? (
+                          <button
+                            onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                            className="text-xs text-amber-400 hover:text-amber-300 font-medium"
+                          >
+                            {s.pesticides.length} · ver
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-600">—</span>
+                        )}
+                      </td>
+                      <td className="table-cell">
+                        <StatusBadge status={s.status} />
+                      </td>
+                      <td className="table-cell">
+                        {user.role === 'ADMIN' && s.status === 'ANALYZED' && (
+                          <button
+                            onClick={() => handleValidate(s.id)}
+                            className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                          >
+                            Validar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                    {expandedId === s.id && s.pesticides?.length > 0 && (
+                      <tr key={`${s.id}-pest`} className="bg-amber-950/15">
+                        <td colSpan={7} className="px-6 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            {s.pesticides.map((p: any) => (
+                              <span
+                                key={p.id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-900/30 border border-amber-700/30 text-xs"
+                              >
+                                <span className="text-amber-300 font-medium">{p.name}</span>
+                                <span className="text-slate-200 font-mono">
+                                  {p.value != null ? Number(p.value).toFixed(4) : '—'}
+                                </span>
+                                <span className="text-slate-500">{p.unit || 'mg/kg'}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {s.pesticides?.length > 0 ? (
-                      <button
-                        onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
-                        className="text-xs text-amber-400 hover:text-amber-300"
-                      >
-                        {s.pesticides.length} plaguicida{s.pesticides.length > 1 ? 's' : ''} ▾
-                      </button>
-                    ) : (
-                      <span className="text-xs text-gray-600">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      s.status === 'PENDING_ANALYSIS' ? 'bg-yellow-900/60 text-yellow-300' :
-                      s.status === 'ANALYZED' ? 'bg-blue-900/60 text-blue-300' :
-                      s.status === 'VALIDATED' ? 'bg-green-900/60 text-green-300' : 'bg-gray-700'
-                    }`}>{s.status.replace('_', ' ')}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {user.role === 'ADMIN' && s.status === 'ANALYZED' && (
-                      <button onClick={() => handleValidate(s.id)} className="text-xs text-green-400 hover:text-green-300">
-                        Validar
-                      </button>
-                    )}
+                  </>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-5 py-16 text-center text-slate-500 text-sm">
+                    No se encontraron lotes
                   </td>
                 </tr>
-                {expandedId === s.id && s.pesticides?.length > 0 && (
-                  <tr key={`${s.id}-pest`} className="bg-amber-950/20">
-                    <td colSpan={7} className="px-6 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {s.pesticides.map((p: any) => (
-                          <span key={p.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-900/40 border border-amber-700/40 text-xs">
-                            <span className="text-amber-300 font-medium">{p.name}</span>
-                            <span className="text-white">{p.value != null ? Number(p.value).toFixed(4) : '—'}</span>
-                            <span className="text-gray-500">{p.unit || 'mg/kg'}</span>
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-5 py-12 text-center text-gray-500">
-                  No se encontraron muestras
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    PENDING_ANALYSIS: 'badge-alert',
+    ANALYZED: 'badge-neutral',
+    VALIDATED: 'badge-conform',
+    CREATED: 'badge-neutral',
+  };
+  const labels: Record<string, string> = {
+    PENDING_ANALYSIS: 'Pendiente',
+    ANALYZED: 'Analizado',
+    VALIDATED: 'Validado',
+    CREATED: 'Creado',
+  };
+  return <span className={map[status] || 'badge-neutral'}>{labels[status] || status}</span>;
 }
