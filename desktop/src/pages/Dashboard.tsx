@@ -14,18 +14,56 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [samples, setSamples] = useState<any[]>([]);
   const [lastUpdate, setLastUpdate] = useState('');
+  const [health, setHealth] = useState<any>(null);
+  const [loadError, setLoadError] = useState('');
 
   const load = useCallback(() => {
     const h = { Authorization: `Bearer ${localStorage.getItem('accessToken')}` };
-    axios.get(`${API}/samples/stats`, { headers: h }).then((r) => setStats(r.data)).catch(() => {});
-    axios.get(`${API}/samples`, { headers: h }).then((r) => {
-      setSamples(r.data);
-      setLastUpdate(new Date().toLocaleTimeString());
-    }).catch(() => {});
+    setLoadError('');
+
+    // Health no requiere token
+    axios
+      .get(`${API}/health`)
+      .then((r) => setHealth(r.data))
+      .catch(() =>
+        setHealth({
+          ok: false,
+          api: false,
+          database: false,
+          hint: 'No se puede conectar a http://localhost:3000 — ¿está corriendo el backend?',
+          counts: { users: 0, samples: 0, products: 0, zones: 0 },
+        }),
+      );
+
+    axios
+      .get(`${API}/samples/stats`, { headers: h })
+      .then((r) => setStats(r.data))
+      .catch((err) => {
+        if (err.code === 'ERR_NETWORK') {
+          setLoadError('Backend no disponible en localhost:3000');
+        } else if (err.response?.status === 401) {
+          setLoadError('Sesión expirada. Cierra sesión e inicia de nuevo.');
+        } else {
+          setLoadError(err.response?.data?.message || 'Error al cargar estadísticas');
+        }
+      });
+
+    axios
+      .get(`${API}/samples`, { headers: h })
+      .then((r) => {
+        setSamples(Array.isArray(r.data) ? r.data : []);
+        setLastUpdate(new Date().toLocaleTimeString());
+      })
+      .catch(() => setSamples([]));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
   useSocket(() => load(), () => load());
+
+  // Solo lotes con cadmio numérico para promedios de zona/tendencia
+  const withCd = samples.filter((s) => s.cadmium != null && !Number.isNaN(Number(s.cadmium)));
 
   const byProduct = samples.reduce((a: any, s) => {
     const n = s.productType?.name || 'Otro';
@@ -35,14 +73,12 @@ export default function Dashboard() {
   const productData = Object.entries(byProduct).map(([name, value]) => ({ name, value }));
 
   const byZone: Record<string, { sum: number; count: number }> = {};
-  samples.forEach((s) => {
+  withCd.forEach((s) => {
     (s.origins || []).forEach((o: any) => {
       const z = o.zone?.name || 'Sin zona';
       if (!byZone[z]) byZone[z] = { sum: 0, count: 0 };
-      if (s.cadmium != null) {
-        byZone[z].sum += Number(s.cadmium);
-        byZone[z].count++;
-      }
+      byZone[z].sum += Number(s.cadmium);
+      byZone[z].count++;
     });
   });
   const zoneData = Object.entries(byZone)
@@ -51,9 +87,8 @@ export default function Dashboard() {
     .slice(0, 8);
 
   const byMonth: Record<string, { sum: number; count: number }> = {};
-  samples.forEach((s) => {
-    if (s.cadmium == null) return;
-    const d = new Date(s.createdAt);
+  withCd.forEach((s) => {
+    const d = new Date(s.analyzedAt || s.createdAt);
     const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (!byMonth[k]) byMonth[k] = { sum: 0, count: 0 };
     byMonth[k].sum += Number(s.cadmium);
@@ -63,18 +98,21 @@ export default function Dashboard() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, d]) => ({ month, promedio: Number((d.sum / d.count).toFixed(3)) }));
 
-  const alertas = samples
-    .filter((s) => s.cadmium != null && Number(s.cadmium) >= LIMITE_CD)
+  const alertas = withCd
+    .filter((s) => Number(s.cadmium) >= LIMITE_CD)
     .sort((a, b) => Number(b.cadmium) - Number(a.cadmium))
     .slice(0, 6);
 
   const pendientes = samples.filter((s) => s.status === 'PENDING_ANALYSIS').length;
   const conPlaguicidas = samples.filter((s) => s.pesticides?.length > 0).length;
 
+  const showDiag =
+    loadError ||
+    (health && (!health.ok || health.counts?.samples === 0 || health.counts?.users === 0));
+
   return (
     <div className="p-8 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-50">Dashboard Principal</h1>
           <p className="text-slate-400 text-sm mt-1">Control de calidad · Cadmio y plaguicidas en productos de cacao</p>
@@ -87,7 +125,54 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* KPIs */}
+      {showDiag && (
+        <div className="mb-6 rounded-2xl border border-amber-700/40 bg-amber-950/30 p-5">
+          <h2 className="text-sm font-semibold text-amber-300 mb-2">Diagnóstico del sistema</h2>
+          {loadError && <p className="text-sm text-rose-300 mb-2">{loadError}</p>}
+          {health && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-3">
+              <div className="rounded-lg bg-slate-950/50 border border-slate-800 px-3 py-2">
+                <span className="text-slate-500">API</span>
+                <p className={health.api ? 'text-emerald-400 font-medium' : 'text-rose-400 font-medium'}>
+                  {health.api ? 'Conectada' : 'No responde'}
+                </p>
+              </div>
+              <div className="rounded-lg bg-slate-950/50 border border-slate-800 px-3 py-2">
+                <span className="text-slate-500">Base de datos</span>
+                <p className={health.database ? 'text-emerald-400 font-medium' : 'text-rose-400 font-medium'}>
+                  {health.database ? 'OK' : 'Error'}
+                </p>
+              </div>
+              <div className="rounded-lg bg-slate-950/50 border border-slate-800 px-3 py-2">
+                <span className="text-slate-500">Usuarios</span>
+                <p className="text-slate-200 font-mono">{health.counts?.users ?? 0}</p>
+              </div>
+              <div className="rounded-lg bg-slate-950/50 border border-slate-800 px-3 py-2">
+                <span className="text-slate-500">Lotes / muestras</span>
+                <p className="text-slate-200 font-mono">{health.counts?.samples ?? 0}</p>
+              </div>
+            </div>
+          )}
+          <p className="text-sm text-amber-200/90">{health?.hint || 'Revisa backend y seed.'}</p>
+          <div className="mt-3 text-xs text-slate-400 font-mono space-y-1 bg-black/30 rounded-lg p-3">
+            <p># En Git Bash, desde la carpeta del proyecto:</p>
+            <p>cd ~/desktop/proyectos/sistema-analisis-cadmio</p>
+            <p>docker compose up -d</p>
+            <p>cd backend</p>
+            <p>cp .env.example .env</p>
+            <p>npm install && npx prisma generate</p>
+            <p>npx prisma migrate dev --name init</p>
+            <p>npm run prisma:seed</p>
+            <p># Si ya había datos a medias:</p>
+            <p>npm run db:reset</p>
+            <p>npm run start:dev</p>
+          </div>
+          <button onClick={load} className="mt-3 btn-secondary text-xs">
+            Volver a comprobar
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <Kpi
           label="Promedio Cd"
@@ -107,80 +192,67 @@ export default function Dashboard() {
           unit="mg/kg"
           tone="conform"
         />
-        <Kpi label="Total lotes" value={stats?.total ?? '—'} tone="neutral" />
+        <Kpi label="Total lotes" value={stats?.total ?? samples.length ?? '—'} tone="neutral" />
         <Kpi label="Pendientes lab" value={pendientes} tone={pendientes > 0 ? 'alert' : 'conform'} />
         <Kpi label="Con plaguicidas" value={conPlaguicidas} tone="neutral" />
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
-        <Panel title="Tendencia de Cadmio" subtitle="Promedio mensual (mg/kg)">
+        <Panel title="Tendencia de Cadmio" subtitle="Promedio mensual (solo con resultado)">
           {trend.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={trend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                 <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
                 <YAxis stroke="#64748b" fontSize={11} />
-                <Tooltip
-                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }}
-                />
+                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }} />
                 <Line type="monotone" dataKey="promedio" stroke="#c4894a" strokeWidth={2.5} dot={{ r: 3.5, fill: '#c4894a' }} />
               </LineChart>
             </ResponsiveContainer>
-          ) : <Empty />}
+          ) : (
+            <Empty />
+          )}
         </Panel>
 
-        <Panel title="Cadmio por Zona" subtitle="Promedio mg/kg (top 8)">
+        <Panel title="Cadmio por Zona" subtitle="Promedio mg/kg (top 8, solo con resultado)">
           {zoneData.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={zoneData} layout="vertical" margin={{ left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                 <XAxis type="number" stroke="#64748b" fontSize={11} />
                 <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={11} width={90} />
-                <Tooltip
-                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }}
-                />
+                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }} />
                 <Bar dataKey="promedio" fill="#9a6540" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          ) : <Empty />}
+          ) : (
+            <Empty />
+          )}
         </Panel>
 
         <Panel title="Distribución por Producto" subtitle="Cantidad de lotes">
           {productData.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie
-                  data={productData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={85}
-                  innerRadius={48}
-                  paddingAngle={2}
-                >
+                <Pie data={productData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} innerRadius={48} paddingAngle={2}>
                   {productData.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }}
-                />
+                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
-          ) : <Empty />}
+          ) : (
+            <Empty />
+          )}
         </Panel>
       </div>
 
-      {/* Tables */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 card overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-sm text-slate-100">Últimos lotes</h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">Registro reciente de recepción y análisis</p>
-            </div>
+          <div className="px-6 py-4 border-b border-slate-800/80">
+            <h3 className="font-semibold text-sm text-slate-100">Últimos lotes</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Registro reciente de recepción y análisis</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -216,14 +288,16 @@ export default function Dashboard() {
                           <span className="text-slate-600 text-xs">—</span>
                         )}
                       </td>
-                      <td className="table-cell"><StatusBadge status={s.status} /></td>
+                      <td className="table-cell">
+                        <StatusBadge status={s.status} />
+                      </td>
                     </tr>
                   );
                 })}
                 {!samples.length && (
                   <tr>
                     <td colSpan={5} className="px-5 py-14 text-center text-slate-500 text-sm">
-                      Sin lotes. Ejecuta el seed del backend.
+                      Sin lotes. Ejecuta el seed en la carpeta backend (ver diagnóstico arriba).
                     </td>
                   </tr>
                 )}
@@ -239,7 +313,7 @@ export default function Dashboard() {
           </div>
           <div className="divide-y divide-slate-800/60">
             {alertas.map((s) => (
-              <div key={s.id} className="px-5 py-3.5 flex justify-between items-center hover:bg-slate-800/20 transition-colors">
+              <div key={s.id} className="px-5 py-3.5 flex justify-between items-center hover:bg-slate-800/20">
                 <div className="min-w-0">
                   <p className="text-sm font-medium font-mono truncate">{s.loteCode}</p>
                   <p className="text-[11px] text-slate-500 truncate">{s.productType?.name}</p>
@@ -311,11 +385,7 @@ function StatusBadge({ status }: { status: string }) {
     VALIDATED: 'Validado',
     CREATED: 'Creado',
   };
-  return (
-    <span className={map[status] || 'badge-neutral'}>
-      {labels[status] || status}
-    </span>
-  );
+  return <span className={map[status] || 'badge-neutral'}>{labels[status] || status}</span>;
 }
 
 function Empty() {
